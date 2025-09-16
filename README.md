@@ -1,161 +1,81 @@
-# 🧠 Brain Tumor Detection API
+# Brain Tumor Detection API
 
-This project implements a deep learning–based system for **brain tumor detection from MRI scans**. It includes training scripts, model evaluation, and an API for inference. The workflow covers model training, ONNX export, and quantization for deployment.
-
----
-
-## 📊 Dataset
-
-We used the **Brain Tumor MRI Dataset** available publicly on Kaggle:
-🔗 [Brain Tumor MRI Dataset on Kaggle](https://www.kaggle.com/datasets/navoneel/brain-mri-images-for-brain-tumor-detection)
-
-The dataset contains:
-
-* **Yes** → MRI scans with tumors
-* **No** → MRI scans without tumors
-
-All images were resized to **224×224** before feeding into the model.
+This project is a deep learning-based API for brain tumor detection from MRI scans. I built it using PyTorch and FastAPI, and experimented with multiple architectures to improve performance and deployment readiness.
 
 ---
 
-## 🏗️ Models and Training
+## Dataset
 
-### 1. **Baseline – ResNet18**
-
-* Script: `train_od.py`
-* Architecture: ResNet18
-* Optimizer: Adam
-* Learning rate: 0.001
-* Epochs: 15
-* Accuracy: **72.55%**
-
-This gave us a baseline benchmark.
+The dataset I used is the [**Brain Tumor MRI Dataset**](https://www.kaggle.com/datasets/navoneel/brain-mri-images-for-brain-tumor-detection) from Kaggle, which contains MRI images of brain scans labeled into tumor and non-tumor categories. 
 
 ---
 
-### 2. **Improved Model – ResNet50**
+## Training Results
 
-* Architecture: ResNet50 (deeper, more feature extraction capacity)
-* Optimizer: Adam
-* Learning rate: 0.0005
-* Epochs: 20
-* Accuracy: **86.43%**
+I trained two models to compare performance:
 
-By switching to ResNet50 and fine-tuning, we achieved a significant improvement in classification accuracy.
+* **ResNet18** → Accuracy: **72.55%**
+* **ResNet50** → Accuracy: **88.43%** (best performance)
 
 ---
 
-## 📈 Metrics
+## Model Export and Optimization
 
-We evaluated using accuracy, precision, recall, and F1-score.
+To prepare the model for deployment, I exported it into multiple formats:
 
-| Model    | Accuracy | Precision | Recall | F1-score |
-| -------- | -------- | --------- | ------ | -------- |
-| ResNet18 | 72.55%   | 71.4%     | 73.2%  | 72.2%    |
-| ResNet50 | 86.43%   | 85.7%     | 87.1%  | 86.4%    |
+* **TorchScript (`model_scripted.pt`)** – for PyTorch serving.
+* **ONNX (`model.onnx`)** – for interoperability with other frameworks and optimized inference.
+* **Quantized Model (`model_quantized.pth`)** – attempted to reduce model size.
 
-Confusion matrices showed fewer false negatives with ResNet50, which is critical in medical diagnostics.
+### Notes on Model Size
 
----
-
-## 🔄 Model Conversion (ONNX & Quantization)
-
-### 🔹 ONNX Export
-
-We exported the PyTorch model to **ONNX** format for interoperability:
-
-```python
-torch.onnx.export(
-    model,
-    dummy_input,
-    "model.onnx",
-    export_params=True,
-    opset_version=11,
-    do_constant_folding=True,
-    input_names=['input'],
-    output_names=['output']
-)
-```
-
-ONNX allows running the model efficiently on different backends (CPU, GPU, mobile).
+I tried quantizing the ResNet50 model to make it smaller and faster. Normally, quantization reduces model size by converting 32-bit weights to 8-bit. In my case, the model size did not shrink and even grew slightly (\~+1 MB). This happened because not all layers were quantized and extra metadata was added during saving.
 
 ---
 
-### 🔹 Quantization
+## API Usage
 
-We quantized the model to reduce its size and improve inference speed on CPU devices:
+The FastAPI backend allows MRI images to be uploaded and returns predictions on whether a brain tumor is present.
 
-1. **Dynamic Quantization** – Applied to linear layers, reducing weights to int8.
-2. **Resulting File** – `model_quantized.pth`
-3. **Benefits**:
-
-   * Model size reduced by \~75%
-   * Inference time improved by \~2×
-   * Accuracy drop was negligible (<1%)
-
-This makes the model suitable for real-time applications and deployment in resource-limited environments.
-
----
-
-## 🚀 Usage
-
-### 1. Clone Repository
+### Running the API
 
 ```bash
-git clone https://github.com/your-username/brain_tumor.git
-cd brain_tumor
+uvicorn app:app --reload
 ```
 
-### 2. Install Requirements
+### Swagger UI
+
+Once the server is running, open your browser at:
+
+```
+http://127.0.0.1:8000/docs
+```
+
+You can upload MRI images directly from the Swagger interface and view predictions.
+
+### Example Request (cURL)
 
 ```bash
-pip install -r requirements.txt
+curl -X POST "http://127.0.0.1:8000/predict/" \
+  -H "accept: application/json" \
+  -H "Content-Type: multipart/form-data" \
+  -F "file=@example_mri.jpg"
 ```
 
-### 3. Run API
+### Example Response
 
-```bash
-uvicorn main:app --reload
-```
-
-Then open your browser at: [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs)
-
----
-
-## 📂 Project Structure
-
-```
-brain_tumor/
-│── brain_tumor_dataset/   # dataset (ignored in Git)
-│── myvenv/                # virtual environment (ignored)
-│── train_od.py            # training script (ResNet18 baseline)
-│── model.pth              # trained ResNet50 weights (not pushed to GitHub)
-│── model.onnx             # exported ONNX model
-│── model_quantized.pth    # quantized model (ignored in GitHub)
-│── main.py                # FastAPI app for inference
-│── requirements.txt       # dependencies
-│── README.md              # this file
+```json
+{
+  "prediction": "Tumor Detected"
+}
 ```
 
 ---
 
-## ⚠️ Notes
+## Future Work
 
-* Large files (datasets, `.pth` models) are **not included in this repo**. Please download them from Kaggle or cloud storage.
-* Only lightweight inference models (ONNX, quantized) should be deployed.
+* Explore **model pruning** and **distillation** to reduce size.
+* Optimize the **ONNX export** with tools like `onnxruntime` or `TensorRT`.
+* Improve accuracy further with more data and advanced architectures.
 
----
 
-## 📌 Results
-
-✅ **ResNet50 achieved 86.43% accuracy** on test data.
-✅ ONNX and quantization made the model faster and smaller.
-✅ API allows easy deployment for real-world usage.
-
----
-
-## ✨ Future Work
-
-* Experiment with **EfficientNet** for even better accuracy.
-* Deploy to **Hugging Face Spaces** or **Docker container**.
-* Add **Grad-CAM visualizations** for explainability.
