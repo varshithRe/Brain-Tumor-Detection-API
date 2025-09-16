@@ -10,11 +10,10 @@ myenv/
 # VS Code settings
 .vscode/
 
-# Model checkpoints (keep only quantized model for deployment)
+# Model checkpoints (keep only scripted model for deployment)
 *.pth
-*.pt
 *.onnx
-!app/models/model_quantized.pt
+!app/models/model_scripted.pt
 
 # Data (raw or processed)
 brain_tumor_dataset/*

@@ -13,7 +13,7 @@ app = FastAPI()
 
 # Load the pre-trained model
 device = torch.device('cpu')
-model = torch.jit.load("models/model_quantized.pt", map_location=device)
+model = torch.jit.load("models/model_scripted.pt", map_location=device)
 model.eval()
 
 # Define the image transformations
