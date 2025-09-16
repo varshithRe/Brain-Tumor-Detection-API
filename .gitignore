@@ -1,0 +1,20 @@
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Virtual environment
+myenv/
+
+# VS Code settings
+.vscode/
+
+# Model checkpoints (keep only quantized model for deployment)
+*.pth
+*.pt
+*.onnx
+!app/models/model_quantized.pt
+
+# Data (raw or processed)
+brain_tumor_dataset/*
